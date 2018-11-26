@@ -3,8 +3,8 @@ from scipy import fftpack
 import numpy as np
 import time
 import transcriber as tb
+import MQTTsend
 
-p = pyaudio.PyAudio()
 CHUNK = 2048  # splitting the sample
 RATE = 44100  # samples per sec, since 20kHz is max audible frequency
 tol = 120  # db threshold for a note
@@ -13,6 +13,8 @@ freq_range = [200, 5000]  # range of frequencies to analyze
 sig_arr = []
 sig_time = []
 MQTT_str = "0,0"
+
+p = pyaudio.PyAudio()
 stream = p.open(
             format=pyaudio.paInt16,
             channels=1,
@@ -34,6 +36,9 @@ if input() == 'START':
             sig_time.append(t)
         except KeyboardInterrupt:
             break
+else:
+    print('No recording.')
+    exit()
 
 print("'YES' to perform FFT and note analysis")
 
@@ -66,5 +71,13 @@ if input() == 'YES':
             length = 0
     print('Total Recording Length: ', sum(sig_time), ' seconds')
     print('Data string: ', MQTT_str)
+else:
+    print('Did not compute.')
+    exit()
 
 print("'PLAY' to send to chime.")
+
+if input() == 'PLAY':
+    MQTTsend.send_MCU(MQTT_str)
+else:
+    print('Not playing.')
