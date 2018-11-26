@@ -61,7 +61,7 @@ if input() == 'YES':
             note = 0
             freq = 0
         if note != start_note:
-            for j in range(index, i-1):
+            for j in range(index, i):
                 length += sig_time[j]
             print(start_note, ' at ', str(start_freq), ' Hz for ', str(length), ' seconds.')
             MQTT_str += "/" + str(tb.get_num(start_freq)) + "," + str(np.round(length, 3))
