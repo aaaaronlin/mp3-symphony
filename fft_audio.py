@@ -7,7 +7,7 @@ import MQTTsend
 
 CHUNK = 2048  # splitting the sample
 RATE = 44100  # samples per sec, since 20kHz is max audible frequency
-tol = 120  # db threshold for a note
+tol = 125  # db threshold for a note
 frames = 0  # for counting frames
 freq_range = [200, 5000]  # range of frequencies to analyze
 sig_arr = []
@@ -45,7 +45,7 @@ print("'YES' to perform FFT and note analysis")
 if input() == 'YES':
     start_note = 0
     start_freq = 0
-    index = 0
+    sample_index = 0
     length = 0
     for i in range(0, len(sig_arr)):
         sig_fft = fftpack.fft(sig_arr[i])
@@ -61,13 +61,13 @@ if input() == 'YES':
             note = 0
             freq = 0
         if note != start_note:
-            for j in range(index, i):
+            for j in range(sample_index, i):
                 length += sig_time[j]
             print(start_note, ' at ', str(start_freq), ' Hz for ', str(length), ' seconds.')
-            MQTT_str += "/" + str(tb.get_num(start_freq)) + "," + str(np.round(length, 3))
+            MQTT_str += "/" + str(tb.get_num(start_freq)) + "," + str(np.round(length, 2))
             start_note = note
             start_freq = freq
-            index = i
+            sample_index = i
             length = 0
     print('Total Recording Length: ', sum(sig_time), ' seconds')
     print('Data string: ', MQTT_str)
