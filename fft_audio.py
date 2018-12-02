@@ -42,6 +42,9 @@ else:
 
 print("'YES' to perform FFT and note analysis")
 
+# enter valid key for instrument octave
+key = "G"
+
 if input() == 'YES':
     start_note = 0
     start_freq = 0
@@ -64,7 +67,7 @@ if input() == 'YES':
             for j in range(sample_index, i):
                 length += sig_time[j]
             print(start_note, ' at ', str(start_freq), ' Hz for ', str(length), ' seconds.')
-            MQTT_str += "/" + str(tb.get_num(start_freq)) + "," + str(np.round(length, 2))
+            MQTT_str += "/" + str(tb.get_num(start_freq, key)) + "," + str(np.round(length, 2))
             start_note = note
             start_freq = freq
             sample_index = i
@@ -74,6 +77,11 @@ if input() == 'YES':
 else:
     print('Did not compute.')
     exit()
+
+print("Verifying connection of chime. Reset board.")
+
+while MQTTsend.receive_MCU() != "connected and waiting...":
+    print("Awaiting...")
 
 print("'PLAY' to send to chime.")
 
