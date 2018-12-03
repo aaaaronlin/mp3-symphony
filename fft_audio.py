@@ -7,7 +7,7 @@ import MQTTsend
 
 CHUNK = 2048  # splitting the sample
 RATE = 44100  # samples per sec, since 20kHz is max audible frequency
-tol = 125  # db threshold for a note
+tol = 110  # db threshold for a note
 frames = 0  # for counting frames
 freq_range = [200, 5000]  # range of frequencies to analyze
 sig_arr = []
