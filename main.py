@@ -5,7 +5,7 @@ from mqttclient import MQTTClient
 import network
 
 session = "MP3Symphony/midi"
-BROKER = "iot.eclipse.org"
+BROKER = "broker.hivemq.com"
 wlan = network.WLAN(network.STA_IF)
 wlan.active(True)
 mqtt = MQTTClient(BROKER)
@@ -22,11 +22,13 @@ mqtt.publish(session, "connected and waiting...")
 
 # parsing data string format: (note_num, length(seconds)/ ex: 0,0/4,5.6/12,0.6...)
 def manage_midi(raw_midi):
+    global readMQTT
     try:
         a = raw_midi.split("/")
         list_midi = [i.split(",") for i in a]
         converted_midi = [[float(y) for y in x] for x in list_midi]
-        count_midi = [[i[0] * 75, i[1]] for i in converted_midi]
+        count_midi = [[i[0], i[1]] for i in converted_midi]
+        readMQTT.deinit()
         return count_midi
     except:
         return 0
@@ -42,25 +44,25 @@ p1 = Pin(A18, mode=Pin.OPEN_DRAIN)
 p2 = Pin(A19, mode=Pin.OPEN_DRAIN)
 m1 = PWM(p1, freq=50000, duty=0, timer=0)
 m2 = PWM(p2, freq=50000, duty=0, timer=0)
-duty = 70
-brake_constant = 50
+duty = 90
+brake_constant = 100
+punch_constant = 10
+turn_list = [0, 16, 47, 90, 141, 198, 261, 328, 398, 468, 539, 610]
 
 # solenoid setup
 s0 = Pin(A1, mode=Pin.OUT)
-solenoid_constant = 100
 
 # callable actions
 def punch():
     global s0
     s0(1)
-    t1 = ticks_ms() + solenoid_constant
+    t1 = ticks_ms() + punch_constant
     while ticks_ms() < t1:
         continue
     s0(0)
 
 def m0_turn(turn):
     global enc0
-    t0 = ticks_ms()
     if turn == 0:
         return 0
     if turn > 0:
@@ -71,58 +73,82 @@ def m0_turn(turn):
         m2.duty(duty)
     while abs(enc0.count()) < abs(turn):
         continue
-    brake(brake_constant)
-    return (ticks_ms() - t0) / 1000
 
-def m0_origin(note):
-    m1.duty(0)
-    m2.duty(duty)
-    while abs(enc0.count()) < note:
-        continue
-    brake(brake_constant)
-    enc0.clear()
-
-def brake(constant):
-    t = ticks_ms() + constant
+def brake():
+    t = ticks_ms() + brake_constant
     while ticks_ms() < t:
         m1.duty(100)
         m2.duty(100)
     m1.duty(0)
     m2.duty(0)
 
-def turn_constant(turn, duty):
-    return
-
 def play(list):
-    global enc0
+    global enc0, s0
     size = len(list)
-    m0_turn(list[0][0])
-    prev_note = list[0][0]
-    for number0 in range(1, size-1):
+    prev_note = 1
+    for i in range(0, size-1):
         enc0.clear()
-        note = list[number0][0]
-        length = list[number0][1]
-        if length > 0.3 or note != 0:
-            turn = note - prev_note
-            t0 = m0_turn(turn)
+        note = list[i][0]
+        length = list[i][1]
+        if note != 0:
+            path = get_best_path(note, prev_note, mode=2)
+            ind = turn_list[abs(path)]
+            print(ind)
+            if path < 0:
+                m0_turn(-ind)
+            else:
+                m0_turn(ind)
+            brake()
             punch()
-            sleep(length - t0 - solenoid_constant/1000)
+            sleep(length)
+            prev_note = note
         else:
             sleep(length)
-        prev_note = note
-    m0_origin(list[size][0])
-
+    m0_turn(get_best_path(1, prev_note, mode=1))
+    brake()
+    s0(0)
 # MQTT timer
 def readMSG(readMQTT):
     mqtt.check_msg()
 
 readMQTT = Timer(2)
 
-#readMQTT.init(period=5000, mode=readMQTT.PERIODIC, callback=readMSG)
+readMQTT.init(period=5000, mode=readMQTT.PERIODIC, callback=readMSG)
 
-def tick():
+#modes: 1 for shortest path, 2 for half-rotation max (wires in the way)
+
+def get_best_path(note, prev_note, mode):
+    turn_comp = []
+    if mode == 1:
+        turn_comp.append(note - prev_note)
+        turn_comp.append(note - prev_note + 12)
+        turn_comp.append(note - prev_note - 12)
+        turn_comp_abs = [abs(x) for x in turn_comp]
+        dist = turn_comp_abs.index(min(turn_comp_abs))
+    elif mode == 2:
+        if prev_note > 6:
+            if note <= 6:
+                dist = note - prev_note + 12
+            else:
+                dist = note - prev_note
+        else:
+            if note <= 6:
+                dist = note - prev_note
+            else:
+                dist = note - prev_note - 12
+    return int(dist)
+
+# others
+s0(0)
+
+def test(turn):
     global enc0
-    for i in range(0, 11):
-        m0_turn(75)
-        enc0.clear()
+    enc0.clear()
+    m0_turn(turn)
+    brake()
+    punch()
+    print(enc0.count())
 
+#if __name__ == "__main__":
+#    msg = '0,0/1,1/2,1/3,1/4,1/5,1/6,1/7,1/8,1/9,1/10,1/11,1/0,0'
+#    mqtt_callback('test', msg.encode())
