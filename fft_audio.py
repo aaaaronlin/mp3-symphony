@@ -5,11 +5,11 @@ import time
 import transcriber as tb
 import MQTTsend
 
-CHUNK = 2048  # splitting the sample
+CHUNK = 4096  # splitting the sample
 RATE = 44100  # samples per sec, since 20kHz is max audible frequency
-tol = 110  # db threshold for a note
+tol = 125  # db threshold for a note
 frames = 0  # for counting frames
-freq_range = [200, 5000]  # range of frequencies to analyze
+freq_range = [500, 4000]  # range of frequencies to analyze
 sig_arr = []
 sig_time = []
 MQTT_str = "0,0"
@@ -43,7 +43,7 @@ else:
 print("'YES' to perform FFT and note analysis")
 
 # enter valid key for instrument octave
-key = "G"
+key = 'G'
 
 if input() == 'YES':
     start_note = 0

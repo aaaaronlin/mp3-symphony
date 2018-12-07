@@ -8,9 +8,9 @@ import transcriber as tb
 p = pyaudio.PyAudio()
 CHUNK = 2048  # bytes in one sample
 RATE = 44100  # samples per sec, since 20kHz is max audible frequency
-tol = 100  # db threshold
+tol = 120  # db threshold
 frames = 0  # for counting frames
-freq_range = [1000, 5000]
+freq_range = [200, 6000]
 
 stream = p.open(
             format=pyaudio.paInt16,

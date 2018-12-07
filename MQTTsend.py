@@ -2,7 +2,7 @@ import paho.mqtt.client as paho
 import time
 
 session = "MP3Symphony/midi"
-BROKER = "iot.eclipse.org"
+BROKER = "broker.hivemq.com"
 
 print("Connecting to MQTT broker", BROKER, "...", end="")
 mqtt = paho.Client()
